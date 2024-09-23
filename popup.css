@@ -1,0 +1,70 @@
+body {
+  font-family: system-ui, -apple-system, "system-ui", "Segoe UI", Roboto, Ubuntu, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  box-sizing: border-box;
+  width: 20rem;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+h2 {
+  background-color: #333;
+  color: white;
+  padding: 1rem;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.content {
+  padding: 1rem;
+}
+
+#chat {
+  height: 20rem;
+  overflow-y: scroll;
+}
+
+.message {
+  margin-bottom: 10px;
+}
+
+.user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.user div {
+  background-color: #ccc;
+  color: black;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.assistant {
+  text-align: left;
+  color: black;
+}
+
+#input {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+button {
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+#control {
+  display: flex;
+}
+
+#send {
+  margin-right: 0.5rem;
+}
