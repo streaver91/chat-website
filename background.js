@@ -9,37 +9,37 @@ chrome.storage.local.get(['openai_api_key'], (result) => {
 // Listen for messages from popup.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'USER_MESSAGE') {
-    handleUserMessage(request.message, request.history, sendResponse);
+    handleUserMessage(request.message, request.history, sendResponse, request.tabId);
     return true; // Keep the message channel open for async response
   }
 });
 
+// Listen for tab removal to clean up conversation history
+chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+  // Remove the conversation history for the closed tab
+  chrome.storage.local.remove(`conversation_${tabId}`);
+});
+
 // Handle user message
-async function handleUserMessage(message, history, sendResponse) {
+async function handleUserMessage(message, history, sendResponse, tabId) {
   try {
     // Get page content from content script
-    const pageContent = await getPageContent();
+    const pageContent = await getPageContent(tabId);
     console.log('Page Content:', pageContent.substring(0, 100)); // Log first 100 chars
 
     // Limit the page content to avoid exceeding token limits
-    const maxContentLength = 1500;
+    const maxContentLength = 50000;
     const limitedContent = pageContent.substring(0, maxContentLength);
 
     // Prepare the messages array for GPT
     const messages = [
       {
         role: 'system',
-        content: [{
-          type: 'text',
-          text: `You are an assistant that answers questions based on the content of the webpage provided. Use the provided webpage content to answer the user's questions as accurately as possible. If the answer is not in the content, say that you don't have that information.`,
-        }]
+        content: `You are an assistant that answers questions based on the content of the webpage provided. Use the provided webpage content to answer the user's questions as accurately as possible. If the answer is not in the content, say that you don't have that information.`,
       },
       {
         role: 'user',
-        content: [{
-          type: 'text',
-          text: `Webpage Content: ${limitedContent}`
-        }]
+        content: `Webpage Content: ${limitedContent}`,
       },
       ...history,
     ];
@@ -57,24 +57,21 @@ async function handleUserMessage(message, history, sendResponse) {
 }
 
 // Function to get page content
-function getPageContent() {
+function getPageContent(tabId) {
   return new Promise((resolve, reject) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_PAGE_CONTENT' }, (response) => {
-          if (response?.content) {
-            console.log('Page Content Retrieved:', response.content.substring(0, 100)); // Log first 100 chars
-            resolve(response.content);
-          } else {
-            console.error('No content received from content script.');
-            resolve('');
-          }
-        });
-      } else {
-        console.error('No active tab found.');
-        resolve('');
-      }
-    });
+    if (tabId) {
+      chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_CONTENT' }, (response) => {
+        if (response?.content) {
+          resolve(response.content);
+        } else {
+          console.error('No content received from content script.');
+          resolve('');
+        }
+      });
+    } else {
+      console.error('No tab ID provided.');
+      resolve('');
+    }
   });
 }
 

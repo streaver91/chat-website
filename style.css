@@ -1,7 +1,7 @@
 body {
   font-family: system-ui, -apple-system, "system-ui", "Segoe UI", Roboto, Ubuntu, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   box-sizing: border-box;
-  width: 20rem;
+  min-width: 20rem;
   margin: 0;
   padding: 0;
   font-size: 0.8rem;
@@ -18,6 +18,7 @@ h2 {
 
 .content {
   padding: 1rem;
+  max-width: 20rem;
 }
 
 #chat {
@@ -46,7 +47,7 @@ h2 {
   color: black;
 }
 
-#input {
+input {
   width: 100%;
   box-sizing: border-box;
   border-radius: 0.5rem;

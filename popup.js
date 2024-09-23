@@ -3,12 +3,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const input = document.getElementById('input');
   const clear = document.getElementById('clear');
   const send = document.getElementById('send');
+  const title = document.getElementById('title');
   let conversationHistory = [];
+  let currentTabId = null;
+
+  // Get the current tab ID
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs.length > 0) {
+      const activeTab = tabs[0];
+      currentTabId = activeTab.id;
+      title.innerText = 'Chat on ' + activeTab.title;
+      loadConversationState(currentTabId);
+    }
+  });
 
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       submitMessage();
     }
+  });
+  input.addEventListener('input', () => {
+    saveConversationState(currentTabId, conversationHistory);
   });
   send.addEventListener('click', submitMessage);
 
@@ -21,21 +36,24 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       input.value = '';
 
+      // Save the updated conversation history
+      saveConversationState(currentTabId, conversationHistory);
+
       // Send message to background script
       chrome.runtime.sendMessage(
         {
           type: 'USER_MESSAGE',
           message: userMessage,
-          history: conversationHistory
+          history: conversationHistory,
+          tabId: currentTabId
         },
         (response) => {
           if (response && response.reply) {
             appendMessage('assistant', response.reply);
             conversationHistory.push({
-              role: 'assistant', content: [
-                { type: 'text', text: response.reply }
-              ]
+              role: 'assistant', content: response.reply
             });
+            saveConversationState(currentTabId, conversationHistory);
           }
         }
       );
@@ -52,11 +70,31 @@ document.addEventListener('DOMContentLoaded', () => {
     chat.scrollTop = chat.scrollHeight;
   }
 
-  appendMessage('user', 'Hello! Ask me a question.');
-  appendMessage('assistant', 'You are an assistant that answers questions based on the content of the webpage provided. Use the provided webpage content to answer the user\'s questions as accurately as possible. If the answer is not in the content, say that you don\'t have that information.');
-
   clear.addEventListener('click', () => {
     chat.innerHTML = '';
     conversationHistory = [];
+    saveConversationState(currentTabId, conversationHistory);
   });
+
+  function loadConversationState(tabId) {
+    chrome.storage.local.get([`conversation_${tabId}`], (result) => {
+      conversationState = result[`conversation_${tabId}`] || {};
+      conversationHistory = conversationState.history || [];
+      input.value = conversationState.userMessage || '';
+      // Display the conversation history
+      conversationHistory.forEach((entry) => {
+        appendMessage(entry.role === 'user' ? 'user' : 'assistant', entry.content);
+      });
+    });
+  }
+
+  function saveConversationState(tabId, history) {
+    const userMessage = input.value.trim();
+    chrome.storage.local.set({
+      [`conversation_${tabId}`]: {
+        history: history,
+        userMessage: userMessage
+      }
+    });
+  }
 });
